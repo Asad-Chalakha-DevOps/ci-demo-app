@@ -49,7 +49,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull ${{ env.IMAGE_NAME }}:latest
-            docker stop ci-demo-app || true
-            docker rm ci-demo-app || true
-            docker run -d --name ci-demo-app --restart=always -p 80:3000 ${{ env.IMAGE_NAME }}:latest
+            sudo docker pull ${{ env.IMAGE_NAME }}:latest
+            sudo docker stop ci-demo-app || true
+            sudo docker rm ci-demo-app || true
+            sudo docker run -d --name ci-demo-app --restart=always -p 80:3000 ${{ env.IMAGE_NAME }}:latest
