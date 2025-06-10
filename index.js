@@ -1,12 +1,12 @@
 const http = require('http');
 const port = process.env.PORT || 3000;
 
-const homepage = `
+const renderPage = (title, heading, message) => `
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome</title>
+  <title>${title}</title>
   <style>
     body {
       margin: 0;
@@ -32,12 +32,26 @@ const homepage = `
     p {
       font-size: 1.2em;
     }
+    nav a {
+      color: #fff;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    nav {
+      margin-bottom: 20px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Hello from GitHub Action CI/CD</h1>
-    <p>This page is deployed automatically using GitHub Actions!</p>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/about">About</a>
+      <a href="/contact">Contact</a>
+    </nav>
+    <h1>${heading}</h1>
+    <p>${message}</p>
   </div>
 </body>
 </html>
@@ -45,9 +59,20 @@ const homepage = `
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/html' });
-  res.end(homepage);
+
+  if (req.url === '/') {
+    res.end(renderPage('Home', 'Welcome!', 'This is the home page served by GitHub CI/CD.'));
+  } else if (req.url === '/about') {
+    res.end(renderPage('About', 'About Us', 'We are learning Node.js and CI/CD.'));
+  } else if (req.url === '/contact') {
+    res.end(renderPage('Contact', 'Get in Touch', 'Email us at example@example.com.'));
+  } else {
+    res.writeHead(404);
+    res.end(renderPage('404', 'Page Not Found', 'Sorry, that page does not exist.'));
+  }
 });
 
 server.listen(port, () => {
-  console.log(`🚀 Server is running on http://localhost:${port}`);
+  console.log(`🚀 Server is running at http://localhost:${port}`);
 });
+
