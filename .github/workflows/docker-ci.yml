@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_NAME: asadchalakha/ci-demo-app
-
+  AWS_REGIO: ap-south-1
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -53,3 +53,14 @@ jobs:
             sudo docker stop ci-demo-app || true
             sudo docker rm ci-demo-app || true
             sudo docker run -d --name ci-demo-app --restart=always -p 80:3000 ${{ env.IMAGE_NAME }}:latest
+        
+      - name: Send Email Notification via SNS
+        run: |
+          aws sns publish \
+            --topic-arn ${{ secrets.SNS_TOPIC_ARN }} \
+            --subject "✅ Deployment Successful" \
+            --message "App deployed successfully to EC2. Repo: $GITHUB_REPOSITORY, Commit: $GITHUB_SHA"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
