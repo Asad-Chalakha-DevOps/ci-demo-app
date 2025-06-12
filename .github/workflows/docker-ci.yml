@@ -6,7 +6,7 @@ on:
 
 env:
   IMAGE_NAME: asadchalakha/ci-demo-app
-  AWS_REGIO: ap-south-1
+  AWS_REGION: ap-south-1
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
