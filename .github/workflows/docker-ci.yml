@@ -59,8 +59,7 @@ jobs:
           aws sns publish \
             --topic-arn ${{ secrets.SNS_TOPIC_ARN }} \
             --subject "✅ Deployment Successful-App is running on the http://15.207.248.211:80"  \
-            --message "App deployed successfully to EC2. Repo: $GITHUB_REPOSITORY, Commit: $GITHUB_SHA"
-            --message "If there is server issue check .yml file and Dockerfile ci-demo-app"
+            --message "App deployed successfully to EC2.\nRepo: $GITHUB_REPOSITORY\nCommit: $GITHUB_SHA\nIf there is a server issue, check .yml file and Dockerfile for ci-demo-app."
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
