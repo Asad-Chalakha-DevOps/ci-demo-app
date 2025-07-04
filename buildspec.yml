@@ -6,7 +6,7 @@ phases:
       - echo Logging in to Amazon ECR...
       - aws --version
       - aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin 767397952451.dkr.ecr.ap-south-2.amazonaws.com
-      - REPOSITORY_URI=14c364543020.dkr.ecr.ap-south-2.amazonaws.com/ci-demo-app
+      - REPOSITORY_URI=767397952451.dkr.ecr.ap-south-2.amazonaws.com/ecs-fargate-repo
       - IMAGE_TAG=latest
 
   build:
@@ -19,7 +19,6 @@ phases:
     commands:
       - echo Build completed on `date`
       - echo Pushing Docker image to ECR...
-      - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Creating imagedefinitions.json...
       - printf '[{"name":"ci-demo-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
