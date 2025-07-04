@@ -19,6 +19,7 @@ phases:
     commands:
       - echo Build completed on `date`
       - echo Pushing Docker image to ECR...
+      - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Creating imagedefinitions.json...
       - printf '[{"name":"ci-demo-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
