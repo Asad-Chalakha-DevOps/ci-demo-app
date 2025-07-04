@@ -1,27 +1,27 @@
-name: Upload Project to S3
+name: Zip and Upload to S3
 
 on:
   push:
     branches:
-      - main  # Or your deploy branch
+      - main
 
 jobs:
-  upload-to-s3:
+  zip-and-upload:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repo
+    - name: Checkout Code
       uses: actions/checkout@v3
-    
+
     - name: Zip the project folder
       run: |
         mkdir upload
-        zip upload/ci-demo-app.zip buildspec.yml Dockerfile index.js package.json
+        zip -r upload/ci-demo-app.zip . -x ".git/*" ".github/*" "upload/*"
 
     - name: Upload to S3
       uses: jakejarvis/s3-sync-action@master
       with:
-        args: --acl private --delete 
+        args: --acl private --delete
       env:
         AWS_S3_BUCKET: ecs-fargate-code-997420041
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
