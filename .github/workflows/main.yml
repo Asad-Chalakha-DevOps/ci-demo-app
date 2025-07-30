@@ -2,7 +2,7 @@ name: Build and Push Docker image to ECR
 
 on:
   push:
-    branches: [main]  # Change if your branch name is different
+    branches: [main]
 
 jobs:
   build-and-push:
@@ -21,6 +21,9 @@ jobs:
 
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Reset Docker to default builder
+      run: docker buildx use default
 
     - name: Build Docker image
       run: |
