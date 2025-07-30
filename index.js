@@ -48,7 +48,7 @@ const renderPage = (title, heading, message) => `
     <nav>
       <a href="/">Home</a>
       <a href="/about">About</a>
-      <a href="/contact">Contacts</a>
+      <a href="/contact">Contact</a>
     </nav>
     <h1>${heading}</h1>
     <p>${message}</p>
