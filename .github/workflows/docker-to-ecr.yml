@@ -2,7 +2,7 @@ name: Build and Push Docker Image to ECR
 
 on:
   push:
-    branches: [main]  # or your active branch
+    branches: [main]
 
 jobs:
   build-and-push:
@@ -22,16 +22,13 @@ jobs:
     - name: Login to Amazon ECR
       uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Set Docker Buildx to default (fixes builder issues)
-      run: docker buildx use default
-
     - name: Build Docker image
       run: |
-        IMAGE_TAG=${{ github.sha }}
-        docker build -t ${{ secrets.ECR_REPOSITORY_URI }}:$IMAGE_TAG .
-        docker tag ${{ secrets.ECR_REPOSITORY_URI }}:$IMAGE_TAG ${{ secrets.ECR_REPOSITORY_URI }}:latest
+        docker build -t ${{ secrets.ECR_REPOSITORY_URI }}:${{ github.sha }} .
+        docker tag ${{ secrets.ECR_REPOSITORY_URI }}:${{ github.sha }} ${{ secrets.ECR_REPOSITORY_URI }}:latest
 
     - name: Push Docker image to ECR
       run: |
         docker push ${{ secrets.ECR_REPOSITORY_URI }}:${{ github.sha }}
         docker push ${{ secrets.ECR_REPOSITORY_URI }}:latest
+
