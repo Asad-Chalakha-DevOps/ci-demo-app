@@ -2,42 +2,31 @@ version: 0.2
 
 env:
   variables:
-    REGION: ap-south-1
-    REPO_NAME: my-demo-app
-    IMAGE_TAG: latest
+    AWS_DEFAULT_REGION: "ap-south-1"
+    ECR_REPOSITORY_URI: "767397952451.dkr.ecr.ap-south-1.amazonaws.com/my-demo-app"
+    IMAGE_TAG: "latest"
 
 phases:
   pre_build:
     commands:
-      - echo "Starting pre-build phase..."
-      # Get AWS account ID and export it
-      - export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-      - echo "AWS Account ID: $ACCOUNT_ID"
-      # Login to Amazon ECR
-      - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
-      - echo "ECR login successful."
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URI
+      - echo "Docker login completed"
 
   build:
     commands:
-      - echo "Starting build phase..."
-      # Build Docker image
-      - docker build -t $REPO_NAME .
-      # Tag Docker image for ECR
-      - docker tag $REPO_NAME:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
-      - echo "Docker image built and tagged."
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t my-demo-app .
+      - docker tag my-demo-app:latest $ECR_REPOSITORY_URI:$IMAGE_TAG
 
   post_build:
     commands:
-      - echo "Starting post-build phase..."
-      # Push Docker image to ECR
-      - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
-      - echo "Docker image pushed to ECR."
-      # Generate imagedefinitions.json for ECS deployment
-      - printf '[{"name":"demo-container","imageUri":"%s"}]' $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG > imagedefinitions.json
-      - echo "imagedefinitions.json created."
+      - echo Build completed on `date`
+      - echo Pushing the Docker image to ECR...
+      - docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+      - echo Docker image pushed successfully!
 
 artifacts:
   files:
-    - imagedefinitions.json
-
+    - '**/*'
