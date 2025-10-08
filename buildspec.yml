@@ -1,28 +1,26 @@
-version: 0.2
+kkversion: 0.2
 
 phases:
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
-      - aws --version
-      - aws ecr get-login-password --region ap-south-2 | docker login --username AWS --password-stdin 767397952451.dkr.ecr.ap-south-2.amazonaws.com
-      - REPOSITORY_URI=767397952451.dkr.ecr.ap-south-2.amazonaws.com/ecs-fargate-repo
+      - ACCOUNT_ID=$(aws sts get-caller-identity --query account --output text)
+      - REGION=ap-south-1
+      - REPO_NAME=my-demo-app
       - IMAGE_TAG=latest
-
+      - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
-
+      - echo Building Docker image...
+      - docker build -t $REPO_NAME .
+      - docker tag $REPO_NAME:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
   post_build:
     commands:
-      - echo Build completed on `date`
       - echo Pushing Docker image to ECR...
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Creating imagedefinitions.json...
-      - printf '[{"name":"ci-demo-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
-
+      - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+      - echo Writing imagedefinitions.json...
+      - printf '[{"name":"demo-container","imageUri":"%s"}]' $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG > imagedefinitions.json
 artifacts:
   files:
     - imagedefinitions.json
+
