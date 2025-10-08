@@ -1,4 +1,4 @@
-kkname: Push Code to S3
+name: Push Code to S3
 
 on:
   push:
