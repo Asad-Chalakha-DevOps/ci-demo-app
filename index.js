@@ -146,7 +146,7 @@ const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/html' });
 
   if (req.url === '/') {
-    res.end(renderPage('Home', 'Welcome!', 'A Sample static Website Hosted on EC2.'));
+    res.end(renderPage('Home', 'Welcome', 'A Sample static Website Hosted on EC2.'));
   } else if (req.url === '/about') {
     res.end(renderPage('About', 'About Us', 'We are learning Node.js and CI/CD.'));
   } else if (req.url === '/contact') {
