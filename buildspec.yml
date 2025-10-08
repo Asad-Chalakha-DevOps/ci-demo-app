@@ -1,25 +1,42 @@
 version: 0.2
 
+env:
+  variables:
+    REGION: ap-south-1
+    REPO_NAME: my-demo-app
+    IMAGE_TAG: latest
+
 phases:
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - ACCOUNT_ID=$(aws sts get-caller-identity --query account --output text)
-      - REGION=ap-south-1
-      - REPO_NAME=my-demo-app
-      - IMAGE_TAG=latest
+      - echo "Starting pre-build phase..."
+      # Get AWS account ID and export it
+      - export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - echo "AWS Account ID: $ACCOUNT_ID"
+      # Login to Amazon ECR
+      - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com
+      - echo "ECR login successful."
+
   build:
     commands:
-      - echo Building Docker image...
+      - echo "Starting build phase..."
+      # Build Docker image
       - docker build -t $REPO_NAME .
+      # Tag Docker image for ECR
       - docker tag $REPO_NAME:latest $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
+      - echo "Docker image built and tagged."
+
   post_build:
     commands:
-      - echo Pushing Docker image to ECR...
+      - echo "Starting post-build phase..."
+      # Push Docker image to ECR
       - docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG
-      - echo Writing imagedefinitions.json...
+      - echo "Docker image pushed to ECR."
+      # Generate imagedefinitions.json for ECS deployment
       - printf '[{"name":"demo-container","imageUri":"%s"}]' $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME:$IMAGE_TAG > imagedefinitions.json
+      - echo "imagedefinitions.json created."
+
 artifacts:
   files:
     - imagedefinitions.json
