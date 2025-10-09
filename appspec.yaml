@@ -1,0 +1,9 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: arn:aws:ecs:ap-south-1:767397952451:task-definition/cicd-def-1:1
+        LoadBalancerInfo:
+          ContainerName: "cicd-container"
+          ContainerPort: 3000
