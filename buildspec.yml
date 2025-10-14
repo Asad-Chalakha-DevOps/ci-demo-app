@@ -1,29 +1,65 @@
 version: 0.2
+
+env:
+  variables:
+    # REQUIRED: Set to your ECR repository name (no account/URI prefix)
+    ECR_REPOSITORY: "my-app"
+    # REQUIRED: Set to your ECS task definition container name
+    CONTAINER_NAME: "my-app"
+    # Optional: default region; CodeBuild usually sets AWS_DEFAULT_REGION automatically
+    AWS_REGION: "us-east-1"
+
 phases:
+  install:
+    runtime-versions:
+      docker: 20
+    commands:
+      - echo "Starting install phase"
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws --version
-      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 767397952451.dkr.ecr.ap-south-1.amazonaws.com
-      - REPOSITORY_URI=767397952451.dkr.ecr.ap-south-1.amazonaws.com/my-demo-app
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
-      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - set -e
+      - echo "Resolving AWS account and region"
+      - export AWS_REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
+      - export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - export REPOSITORY_URI="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"
+      - echo "Logging into ECR $REPOSITORY_URI"
+      - aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+      - echo "Ensuring ECR repository exists: $ECR_REPOSITORY"
+      - |
+        aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION" >/dev/null 2>&1 \
+        || aws ecr create-repository \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-scanning-configuration scanOnPush=true \
+            --encryption-configuration encryptionType=AES256 \
+            --region "$AWS_REGION"
+      - export IMAGE_TAG=${IMAGE_TAG:-$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-12)}
+      - echo "Repository URI: $REPOSITORY_URI"
+      - echo "Image tag: $IMAGE_TAG"
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...          
-      - docker build -t $REPOSITORY_URI:latest .
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+      - set -e
+      - export AWS_REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
+      - export AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}
+      - export REPOSITORY_URI=${REPOSITORY_URI:-"$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"}
+      - export IMAGE_TAG=${IMAGE_TAG:-$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-12)}
+      - echo "Building the Docker image"
+      - docker build -t "$ECR_REPOSITORY:$IMAGE_TAG" .
+      - docker tag "$ECR_REPOSITORY:$IMAGE_TAG" "$REPOSITORY_URI:$IMAGE_TAG"
+      - docker tag "$REPOSITORY_URI:$IMAGE_TAG" "$REPOSITORY_URI:latest"
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker images...
-      - docker push $REPOSITORY_URI:latest
-      - docker push $REPOSITORY_URI:$IMAGE_TAG
-      - echo Writing image definitions file...
-      - printf '[{"name":"cicd-container","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - set -e
+      - export AWS_REGION=${AWS_REGION:-${AWS_DEFAULT_REGION}}
+      - export AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text)}
+      - export REPOSITORY_URI=${REPOSITORY_URI:-"$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY"}
+      - export IMAGE_TAG=${IMAGE_TAG:-$(echo "$CODEBUILD_RESOLVED_SOURCE_VERSION" | cut -c1-12)}
+      - echo "Pushing Docker images to $REPOSITORY_URI"
+      - docker push "$REPOSITORY_URI:$IMAGE_TAG"
+      - docker push "$REPOSITORY_URI:latest"
+      - echo "Generating imagedefinitions.json for ECS"
+      - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$REPOSITORY_URI:$IMAGE_TAG" > imagedefinitions.json
+      - echo "imagedefinitions.json contents:" && cat imagedefinitions.json
+
 artifacts:
-    files: 
-      - imagedefinitions.json
-      - appspec.yaml
-      - taskdef.json
+  files:
+    - imagedefinitions.json
